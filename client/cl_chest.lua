@@ -1,14 +1,4 @@
-ESX = nil
-
-Citizen.CreateThread(function()
-    while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Citizen.Wait(0)
-    end
-end)
-
 function KeyboardInput(TextEntry, ExampleText, MaxStringLenght)
-
     AddTextEntry('FMMC_KEY_TIP1', TextEntry) 
     
     blockinput = true 
@@ -30,6 +20,7 @@ function KeyboardInput(TextEntry, ExampleText, MaxStringLenght)
 end
 
 local open = false
+local transactionInProgress = false
 local mainMenu = RageUI.CreateMenu("Coffre", "Interaction", nil, nil, "root_cause5", "img_red")
 local inventaire = RageUI.CreateSubMenu(mainMenu, "Inventaire", "Interaction")
 local coffre = RageUI.CreateSubMenu(mainMenu, "Coffre", "Interaction")
@@ -51,6 +42,30 @@ local function getStock(id)
     ESX.TriggerServerCallback("xHotel:getStock", function(result) 
         stock = result
     end, id)
+end
+
+local function depositItem(itemName, label, count, chestId)
+    if not transactionInProgress then
+        transactionInProgress = true
+        TriggerServerEvent("xHotel:addItemChest", itemName, label, count, chestId)
+        Wait(1000)
+        getInventory()
+        transactionInProgress = false
+    else
+        ESX.ShowNotification("(~r~Erreur~s~)\nTransaction en cours. Attendez la fin.")
+    end
+end
+
+local function withdrawItem(itemName, label, count, chestId)
+    if not transactionInProgress then
+        transactionInProgress = true
+        TriggerServerEvent("xHotel:removeItemChest", itemName, label, count, chestId)
+        Wait(1000)
+        getStock(chestId)
+        transactionInProgress = false
+    else
+        ESX.ShowNotification("(~r~Erreur~s~)\nTransaction en cours. Attendez la fin.")
+    end
 end
 
 function openChestMenu(id)
@@ -79,9 +94,7 @@ function openChestMenu(id)
                                             if count > v.count then
                                                 ESX.ShowNotification("(~r~Erreur~s~)\nVous n\'en avez pas suffisamment.")
                                             else
-                                                TriggerServerEvent("xHotel:addItemChest", v.name, v.label, count, id)
-                                                Wait(1000)
-                                                getInventory()
+                                                depositItem(v.name, v.label, count, id)
                                             end
                                         else ESX.ShowNotification("(~r~Erreur~s~)\nQuantité invalide.") end
                                     else ESX.ShowNotification("(~r~Erreur~s~)\nQuantité invalide.") end
@@ -106,9 +119,7 @@ function openChestMenu(id)
                                             if count > v.cb then
                                                 ESX.ShowNotification("(~r~Erreur~s~)\nIl y\'en à pas suffisamment dans le coffre.")
                                             else
-                                                TriggerServerEvent("xHotel:removeItemChest", v.name, v.label, count, id)
-                                                Wait(1000)
-                                                getStock(id)
+                                                withdrawItem(v.name, v.label, count, id)
                                             end
                                         else ESX.ShowNotification("(~r~Erreur~s~)\nQuantité invalide.") end
                                     else ESX.ShowNotification("(~r~Erreur~s~)\nQuantité invalide.") end
@@ -121,5 +132,3 @@ function openChestMenu(id)
         end)
     end
 end
-
---- Xed#1188 | https://discord.gg/HvfAsbgVpM
