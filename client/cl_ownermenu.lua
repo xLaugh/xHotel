@@ -28,12 +28,12 @@ RegisterNetEvent("xHotel:notifsonner")
 AddEventHandler("xHotel:notifsonner", function(result) liste = result end)
 
 RegisterNetEvent("xHotel:enterIn")
-AddEventHandler("xHotel:enterIn", function(id, pos)
+AddEventHandler("xHotel:enterIn", function(id, posIn)
     FreezeEntityPosition(PlayerPedId(), false)
     TriggerServerEvent("xHotel:setBucket", tonumber(id))
     DoScreenFadeOut(200)
     Wait(200)
-    ESX.Game.Teleport(PlayerPedId(), pos, function()end)
+    ESX.Game.Teleport(PlayerPedId(), posIn, function()end)
     Wait(1000)
     DoScreenFadeIn(200)
     getHotel()
@@ -61,7 +61,7 @@ function OwnerMenu(id)
                             end
                         end
                     })
-                    RageUI.Button("Listes des personnes qui ont sonner", nil, {RightLabel = "→"}, true, {onSelected = function() getListeSonner() end}, sub_menu1)
+                    RageUI.Button("Listes des personnes qui ont sonné", nil, {RightLabel = "→"}, true, {onSelected = function() getListeSonner() end}, sub_menu1)
                     RageUI.Line()
                     RageUI.Button("Rendre la chambre", nil, {RightBadge = RageUI.BadgeStyle.Tick}, true, {
                         onSelected = function()
@@ -84,7 +84,7 @@ function OwnerMenu(id)
                         end
                     else
                         RageUI.Separator("")
-                        RageUI.Separator("~r~Personne à sonner à la porte.")
+                        RageUI.Separator("~r~Personne n'a sonné à la porte.")
                         RageUI.Separator("")
                     end
                 end)
@@ -93,4 +93,20 @@ function OwnerMenu(id)
     end
 end
 
---- Xed#1188 | https://discord.gg/HvfAsbgVpM
+-- Ajouter un événement de capture de touche pour ouvrir le menu OwnerMenu avec la touche F9
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if IsControlJustPressed(1, 56) then -- 56 correspond à la touche F9
+            local playerPed = PlayerPedId()
+            local playerCoords = GetEntityCoords(playerPed)
+            ESX.TriggerServerCallback("xHotel:getPlayerHotelId", function(hotelId)
+                if hotelId then
+                    OwnerMenu(hotelId)
+                else
+                    ESX.ShowNotification("Vous n'êtes pas dans un hôtel.")
+                end
+            end)
+        end
+    end
+end)
