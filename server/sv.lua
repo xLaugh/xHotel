@@ -31,16 +31,21 @@ ESX.RegisterServerCallback("xHotel:getPlayerBucket", function(source, cb)
 end)
 
 local function dateRented()
-    local date = ('%s/%s/%s'):format(tonumber(os.date('%d'))+7, os.date('%m'), os.date('%Y'))
-
-    if tonumber(os.date('%d'))+7 <= 31 then
-        return date
+    local currentDay = tonumber(os.date('%d'))
+    local nextDay = currentDay + 2
+    local currentMonth = tonumber(os.date('%m'))
+    local currentYear = tonumber(os.date('%Y'))
+    
+    if nextDay <= 31 then
+        return ('%s/%s/%s'):format(nextDay, currentMonth, currentYear)
     else
-        local day = 31 - tonumber(os.date('%d'))
-        local calcule = 7 - day
-        local result  = 0 + calcule
-        date = ('%s/%s/%s'):format(tonumber(result), tonumber(os.date('%m'))+1, os.date('%Y'))
-        return date
+        nextDay = nextDay - 31
+        currentMonth = currentMonth + 1
+        if currentMonth > 12 then
+            currentMonth = 1
+            currentYear = currentYear + 1
+        end
+        return ('%s/%s/%s'):format(nextDay, currentMonth, currentYear)
     end
 end
 
@@ -102,17 +107,25 @@ AddEventHandler("xHotel:sonner", function(owner, id)
 end)
 
 RegisterNetEvent("xHotel:enter")
-AddEventHandler("xHotel:enter", function(source, id, pos)
+AddEventHandler("xHotel:enter", function(source, id)
     local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
 
     if (not xPlayer) then return end
-    for _,v in pairs(listes) do
-        if v.source == source then
-            table.remove(listes,  _)
-            TriggerClientEvent("xHotel:enterIn", source, id, pos)
+
+    MySQL.Async.fetchAll("SELECT posIn FROM hotel WHERE id = @id", {
+        ['@id'] = id
+    }, function(result)
+        if result[1] then
+            local posIn = json.decode(result[1].posIn)
+            for _,v in pairs(listes) do
+                if v.source == source then
+                    table.remove(listes, _)
+                    TriggerClientEvent("xHotel:enterIn", source, id, posIn)
+                end
+            end
         end
-    end
+    end)
 end)
 
 -- Chest
@@ -330,7 +343,7 @@ local function RemoveMoney(owner, price, date)
                 ['@identifier'] = owner
             }, function()end)
             MySQL.Async.execute("UPDATE hotel SET dateRented = @dateRented WHERE owner = @owner", {
-                ['@dateRented'] = date,
+                ['@dateRented'] = ('%s/%s/%s'):format(tonumber(os.date('%d'))+2, os.date('%m'), os.date('%Y')),
                 ['@owner'] = owner
             }, function()end)
         else
@@ -350,7 +363,7 @@ CreateThread(function()
                 if v.dateRented ~= nil then
                     local date = os.date("%d/%m/%Y")
                     if date == v.dateRented and v.owner ~= nil then
-                        RemoveMoney(v.owner, tonumber(v.price), ('%s/%s/%s'):format(tonumber(os.date('%d'))+7, os.date('%m'), os.date('%Y')))
+                        RemoveMoney(v.owner, tonumber(v.price), ('%s/%s/%s'):format(tonumber(os.date('%d'))+2, os.date('%m'), os.date('%Y')))
                     end
                 end
             end
@@ -359,4 +372,20 @@ CreateThread(function()
     end
 end)
 
---- Xed#1188 | https://discord.gg/HvfAsbgVpM
+ESX.RegisterServerCallback("xHotel:getPlayerHotelId", function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then
+        cb(nil)
+        return
+    end
+
+    MySQL.Async.fetchAll("SELECT id FROM hotel WHERE owner = @owner", {
+        ['@owner'] = xPlayer.getIdentifier()
+    }, function(result)
+        if result[1] then
+            cb(result[1].id)
+        else
+            cb(nil)
+        end
+    end)
+end)
