@@ -49,7 +49,6 @@ Citizen.CreateThread(function()
             local dstExit = Vdist(pPos.x, pPos.y, pPos.z, json.decode(v.posOut).x, json.decode(v.posOut).y, json.decode(v.posOut).z)
             local dstEnter = Vdist(pPos.x, pPos.y, pPos.z, json.decode(v.posIn).x, json.decode(v.posIn).y, json.decode(v.posIn).z)
             local dstChest = Vdist(pPos.x, pPos.y, pPos.z, json.decode(v.posChest).x, json.decode(v.posChest).y, json.decode(v.posChest).z)
-            local dstCloakroom = Vdist(pPos.x, pPos.y, pPos.z, json.decode(v.posCloakroom).x, json.decode(v.posCloakroom).y, json.decode(v.posCloakroom).z)
 
             if dstExit <= xHotel.MarkerDistance then
                 wait = 0
@@ -115,19 +114,6 @@ Citizen.CreateThread(function()
                         getHotel()
                     end
                 end
-                if dstCloakroom <= xHotel.MarkerDistance then
-                    wait = 0
-                    DrawMarker(xHotel.MarkerType, json.decode(v.posCloakroom).x, json.decode(v.posCloakroom).y, (json.decode(v.posCloakroom).z)-1.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0, xHotel.MarkerSizeLargeur, xHotel.MarkerSizeEpaisseur, xHotel.MarkerSizeHauteur, xHotel.MarkerColorR, xHotel.MarkerColorG, xHotel.MarkerColorB, xHotel.MarkerOpacite, xHotel.MarkerSaute, true, p19, xHotel.MarkerTourne)
-                end
-                if dstCloakroom <= xHotel.OpenMenuDistance then
-                    wait = 0
-                    ESX.ShowHelpNotification("Appuyez sur ~INPUT_CONTEXT~ pour ouvrir l'armoire.")
-                    if IsControlJustPressed(1, 51) then
-                        FreezeEntityPosition(PlayerPedId(), true)
-                        openCloakroomMenu(v.id)
-                        getHotel()
-                    end
-                end
             end
             if ESX.PlayerData.identifier == v.owner then id = tonumber(v.id) end
         end    
@@ -141,5 +127,3 @@ RegisterCommand("openOwnerMenu", function()
         OwnerMenu(id)
     end
 end)
-
---- Xed#1188 | https://discord.gg/HvfAsbgVpM
